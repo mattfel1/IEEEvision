@@ -189,9 +189,9 @@ class VisualCortex:
 
 	#this should display the two images superimposed on top of each other as if they were stitched
 	def superimposeImages(self,img1,img2,kp1,kp2,matches):
-		point1 = 0;
-		point2 = 3;
-		point3 = 9;
+		point1 = 200;
+		point2 = 201;
+		point3 = 203;
 		#pull out the indices that we matched up from the train
 		trainIndices = [matches[point1].trainIdx, matches[point2].trainIdx, matches[point3].trainIdx];
 		#pull out the indices that we matched up from the query
@@ -233,6 +233,50 @@ class VisualCortex:
 		return;
 
 
+	#draw the two images and lines between the features that map
+	def drawMatches(self, img1, img2, kp1, kp2, matches, numberofpoints):
+		#get image dimensions
+		rows1, cols1 = img1.shape;
+		rows2, cols2 = img2.shape;
+		#get ready to add it to the train image
+		fullimg = np.zeros((max(rows1,rows2),cols1 + cols2 + 5,3), np.uint8);
+		#stick the two images together on full image (offset img2)
+		for x in range(0,rows2-1):
+			for y in range(0,cols2-1):
+				fullimg[x,y+cols1+5] = img2[x,y];
+		for x in range(0,rows1-1):
+			for y in range(0,cols1-1):
+				fullimg[x,y] = img1[x,y];
+
+		#plot the keypoint matches
+		for i in range(0,numberofpoints):
+			#get indices of matched points in the kp arrays
+			index1 = matches[i].trainIdx;
+			index2 = matches[i].queryIdx;
+			#extract coordinates of these keypoints
+			feature1 = kp1[index1].pt;
+			feature2 = kp2[index2].pt;
+			print feature2;
+			#offset feature2
+			feature1 = tuple([int(feature1[0]), int(feature1[1])]);
+			feature2 = tuple([int(feature2[0] + cols1 + 5), int(feature2[1])]);
+			print feature2;
+			#put dots on these features
+			cv2.circle(fullimg, feature1, 2, (0,255,0), -1);
+			cv2.circle(fullimg, feature2, 2, (0,255,0), -1);
+			#connect the dots with a line
+			cv2.line(fullimg,feature1,feature2,(0,255,0),1)
+
+		while(1):
+			cv2.imshow('full',fullimg);
+
+			if cv2.waitKey(20) & 0xFF == 27:
+				break;
+		cv2.destroyAllWindows()
+		return;
+
+
+
 	#for testing the feature_detect and feature_match methods
 	def test_feature_map(self):
 		#load images
@@ -254,7 +298,10 @@ class VisualCortex:
 			print "we matched train index " + str(matches[i].trainIdx) + " with " + str(matches[i].queryIdx) + " and they had a weight of " + str(matches[i].distance);
 		print kp1[0].pt;
 
+		#plot both images and then superimpose them on each other by matching three points
 		self.superimposeImages(img1,img2,kp1,kp2,matches);
+		#plot both images side by side and draw lines between matched points
+		self.drawMatches(img1,img2,kp1,kp2,matches,20);
 
 
 
